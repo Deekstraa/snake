@@ -2,8 +2,10 @@ use crate::prelude::*;
 
 pub struct Snake {
     pub movement_dir: MovementDir,
-    head_position: Point,
+    pub head_position: Point,
     velocity: i32,
+    pub tail: Vec<SnakeTail>,
+    pub position_matrix: [[bool; VIEW_HEIGHT as usize]; VIEW_WIDTH as usize],
 }
 
 impl Snake {
@@ -12,6 +14,8 @@ impl Snake {
             movement_dir: MovementDir::Right,
             head_position: Point::new(20, 25),
             velocity: 1,
+            tail: Vec::new(),
+            position_matrix: [[true; VIEW_HEIGHT as usize]; VIEW_WIDTH as usize],
         }
     }
 
@@ -23,45 +27,68 @@ impl Snake {
             BLACK,
             to_cp437('#'),
         );
+
+        for tail_piece in self.tail.iter() {
+            ctx.set(
+                tail_piece.position.x,
+                tail_piece.position.y,
+                YELLOW,
+                BLACK,
+                to_cp437('#'),
+            );
+        }
     }
 
-    pub fn move_snake(&mut self, input_buffer: [MovementDir; 3]) {
-        for input in input_buffer.iter() {
-            if Snake::is_allowed_movement(self.movement_dir, *input) {
-                match input {
-                    MovementDir::Down => {
-                        self.change_direction(*input);
-                        self.head_position.y += self.velocity;
-                    }
-                    MovementDir::Up => {
-                        self.change_direction(*input);
-                        self.head_position.y -= self.velocity;
-                    }
-                    MovementDir::Left => {
-                        self.change_direction(*input);
-                        self.head_position.x -= self.velocity;
-                    }
-                    MovementDir::Right => {
-                        self.change_direction(*input);
-                        self.head_position.x += self.velocity;
-                    }
-                    MovementDir::None => {
-                        //if movement direction is none keep current movement
-                    }
+    pub fn move_snake(&mut self, input: MovementDir) {
+        if Snake::is_allowed_movement(self.movement_dir, input) {
+            match input {
+                MovementDir::Down => {
+                    self.head_position.y += self.velocity;
+                    self.movement_dir = input;
+                }
+                MovementDir::Up => {
+                    self.head_position.y -= self.velocity;
+                    self.movement_dir = input;
+                }
+                MovementDir::Left => {
+                    self.head_position.x -= self.velocity;
+                    self.movement_dir = input;
+                }
+                MovementDir::Right => {
+                    self.head_position.x += self.velocity;
+                    self.movement_dir = input;
+                }
+                MovementDir::None => {
+                    //if movement direction is none keep current movement
                 }
             }
+            self.shift_tail();
+        }
 
-            if self.collide() {
-                self.head_position = Point::new(20, 25);
-                self.movement_dir = MovementDir::Right;
-            }
+        if self.collide() {
+            //TODO: Clear tail on death
+            self.head_position = Point::new(20, 25);
+            self.movement_dir = MovementDir::Right;
         }
     }
 
-    fn change_direction(&mut self, new_direction: MovementDir) {
-        if Snake::is_allowed_movement(self.movement_dir, new_direction) {
-            self.movement_dir = new_direction;
+    pub fn add_tail(&mut self) {
+        let mut spawn_position = Point::zero();
+        let mut mov_dir = MovementDir::None;
+
+        if let Some(tail_end) = self.tail.last() {
+            spawn_position = Snake::get_new_tail_pos(tail_end.movement_dir, tail_end.position);
+            mov_dir = tail_end.movement_dir;
+        } else {
+            spawn_position = Snake::get_new_tail_pos(self.movement_dir, self.head_position);
         }
+
+        self.tail
+            .push(SnakeTail::new(mov_dir, spawn_position, self.velocity));
+    }
+
+    pub fn set_position_matrix(&mut self) {
+        //keep track of the position matrix as the snake is updated.
     }
 
     fn is_allowed_movement(dir1: MovementDir, dir2: MovementDir) -> bool {
@@ -86,7 +113,63 @@ impl Snake {
         {
             return true;
         }
-
+        //TODO: Check for collision with own tail
         false
+    }
+
+    fn get_new_tail_pos(dir: MovementDir, tail_pos: Point) -> Point {
+        let mut pos: Point = Point::zero();
+        match dir {
+            MovementDir::Down => {
+                pos = Point::new(tail_pos.x, tail_pos.y - 1);
+            }
+            MovementDir::Up => {
+                pos = Point::new(tail_pos.x, tail_pos.y + 1);
+            }
+            MovementDir::Left => {
+                pos = Point::new(tail_pos.x - 1, tail_pos.y);
+            }
+            MovementDir::Right => {
+                pos = Point::new(tail_pos.x + 1, tail_pos.y);
+            }
+            MovementDir::None => {}
+        }
+        pos
+    }
+
+    fn shift_tail(&mut self) {
+        if self.tail.is_empty() {
+            return;
+        } else {
+            let mut next_pos = self.head_position;
+            let mut next_dir = self.movement_dir;
+            let mut _pos = Point::zero();
+            let mut _dir = MovementDir::None;
+            for tail_piece in self.tail.iter_mut() {
+                _pos = tail_piece.position;
+                _dir = tail_piece.movement_dir;
+                tail_piece.position = next_pos;
+                tail_piece.movement_dir = next_dir;
+                next_pos = _pos;
+                next_dir = _dir;
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct SnakeTail {
+    pub movement_dir: MovementDir,
+    pub position: Point,
+    velocity: i32,
+}
+
+impl SnakeTail {
+    fn new(movement_dir: MovementDir, position: Point, velocity: i32) -> Self {
+        Self {
+            movement_dir,
+            position,
+            velocity,
+        }
     }
 }

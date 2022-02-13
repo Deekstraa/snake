@@ -1,11 +1,13 @@
 //TODO: Separate different parts of game to different files.
+mod food;
 mod snake;
 
 mod prelude {
     pub use bracket_lib::prelude::*;
     pub const VIEW_WIDTH: i32 = 80;
     pub const VIEW_HEIGHT: i32 = 50;
-    pub const FRAME_TIME: f32 = 28.0;
+    pub const FRAME_TIME: f32 = 50.0;
+    pub use crate::food::*;
     pub use crate::snake::*;
 
     #[derive(Clone, Copy, Debug)]
@@ -23,28 +25,39 @@ use crate::prelude::*;
 struct State {
     snake: Snake,
     frame_time: f32,
+    food: Food,
     input_buffer: [MovementDir; 3],
 }
 
 impl GameState for State {
     fn tick(&mut self, ctx: &mut BTerm) {
-        ctx.cls_bg(NAVY);
+        ctx.cls_bg(BLACK);
         //store input buffer to call as soon as context
         //reaches frame time
         self.set_input_buffer(ctx);
         self.frame_time += ctx.frame_time_ms;
         if self.frame_time > FRAME_TIME {
             self.frame_time = 0.0;
-            self.snake.move_snake(self.input_buffer);
+            for movement in self.input_buffer {
+                self.snake.move_snake(movement);
+                if self.food.check_collision(self.snake.head_position) {
+                    self.snake.add_tail();
+                    self.snake.set_position_matrix();
+                    self.food.place_food(self.snake.position_matrix);
+                    // println!("{:?}", self.snake.tail);
+                    // println!("{:?}", self.snake.head_position);
+                }
+            }
             //get last movement and put it at front of input buffer
             self.input_buffer = [
                 self.snake.movement_dir,
                 MovementDir::None,
                 MovementDir::None,
-            ]
+            ];
         }
 
         self.snake.render(ctx);
+        self.food.render(ctx);
     }
 }
 
@@ -53,6 +66,7 @@ impl State {
         State {
             snake: Snake::new(),
             frame_time: 0.0,
+            food: Food::new(),
             input_buffer: [MovementDir::Right, MovementDir::None, MovementDir::None],
         }
     }
