@@ -44,8 +44,6 @@ impl GameState for State {
                     self.snake.add_tail();
                     self.snake.set_position_matrix();
                     self.food.place_food(self.snake.position_matrix);
-                    // println!("{:?}", self.snake.tail);
-                    // println!("{:?}", self.snake.head_position);
                 }
             }
             //get last movement and put it at front of input buffer
@@ -55,7 +53,6 @@ impl GameState for State {
                 MovementDir::None,
             ];
         }
-
         self.snake.render(ctx);
         self.food.render(ctx);
     }

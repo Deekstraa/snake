@@ -43,18 +43,22 @@ impl Snake {
         if Snake::is_allowed_movement(self.movement_dir, input) {
             match input {
                 MovementDir::Down => {
+                    self.shift_tail();
                     self.head_position.y += self.velocity;
                     self.movement_dir = input;
                 }
                 MovementDir::Up => {
+                    self.shift_tail();
                     self.head_position.y -= self.velocity;
                     self.movement_dir = input;
                 }
                 MovementDir::Left => {
+                    self.shift_tail();
                     self.head_position.x -= self.velocity;
                     self.movement_dir = input;
                 }
                 MovementDir::Right => {
+                    self.shift_tail();
                     self.head_position.x += self.velocity;
                     self.movement_dir = input;
                 }
@@ -62,7 +66,6 @@ impl Snake {
                     //if movement direction is none keep current movement
                 }
             }
-            self.shift_tail();
         }
 
         if self.collide() {
@@ -81,6 +84,7 @@ impl Snake {
             mov_dir = tail_end.movement_dir;
         } else {
             spawn_position = Snake::get_new_tail_pos(self.movement_dir, self.head_position);
+            mov_dir = self.movement_dir;
         }
 
         self.tail
@@ -127,10 +131,10 @@ impl Snake {
                 pos = Point::new(tail_pos.x, tail_pos.y + 1);
             }
             MovementDir::Left => {
-                pos = Point::new(tail_pos.x - 1, tail_pos.y);
+                pos = Point::new(tail_pos.x + 1, tail_pos.y);
             }
             MovementDir::Right => {
-                pos = Point::new(tail_pos.x + 1, tail_pos.y);
+                pos = Point::new(tail_pos.x - 1, tail_pos.y);
             }
             MovementDir::None => {}
         }
@@ -141,16 +145,17 @@ impl Snake {
         if self.tail.is_empty() {
             return;
         } else {
-            let mut next_pos = self.head_position;
+            let mut next_pos = Point::new(self.head_position.x, self.head_position.y);
             let mut next_dir = self.movement_dir;
             let mut _pos = Point::zero();
             let mut _dir = MovementDir::None;
+
             for tail_piece in self.tail.iter_mut() {
-                _pos = tail_piece.position;
+                _pos = Point::new(tail_piece.position.x, tail_piece.position.y);
                 _dir = tail_piece.movement_dir;
-                tail_piece.position = next_pos;
+                tail_piece.position = Point::new(next_pos.x, next_pos.y);
                 tail_piece.movement_dir = next_dir;
-                next_pos = _pos;
+                next_pos = Point::new(_pos.x, _pos.y);
                 next_dir = _dir;
             }
         }
