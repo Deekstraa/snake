@@ -6,7 +6,7 @@ mod prelude {
     pub use bracket_lib::prelude::*;
     pub const VIEW_WIDTH: i32 = 80;
     pub const VIEW_HEIGHT: i32 = 50;
-    pub const FRAME_TIME: f32 = 50.0;
+    pub const FRAME_TIME: f32 = 55.0;
     pub use crate::food::*;
     pub use crate::snake::*;
 
@@ -39,7 +39,13 @@ impl GameState for State {
         if self.frame_time > FRAME_TIME {
             self.frame_time = 0.0;
             for movement in self.input_buffer {
+                self.snake.position_matrix = [[true; VIEW_HEIGHT as usize]; VIEW_WIDTH as usize];
                 self.snake.move_snake(movement);
+                if self.snake.check_collision() {
+                    self.snake.head_position = Point::new(20, 25);
+                    self.snake.movement_dir = MovementDir::Right;
+                    self.snake.tail = Vec::new();
+                }
                 if self.food.check_collision(self.snake.head_position) {
                     self.snake.add_tail();
                     self.snake.set_position_matrix();

@@ -43,21 +43,29 @@ impl Snake {
         if Snake::is_allowed_movement(self.movement_dir, input) {
             match input {
                 MovementDir::Down => {
+                    self.position_matrix[self.head_position.x as usize]
+                        [self.head_position.y as usize] = false;
                     self.shift_tail();
                     self.head_position.y += self.velocity;
                     self.movement_dir = input;
                 }
                 MovementDir::Up => {
+                    self.position_matrix[self.head_position.x as usize]
+                        [self.head_position.y as usize] = false;
                     self.shift_tail();
                     self.head_position.y -= self.velocity;
                     self.movement_dir = input;
                 }
                 MovementDir::Left => {
+                    self.position_matrix[self.head_position.x as usize]
+                        [self.head_position.y as usize] = false;
                     self.shift_tail();
                     self.head_position.x -= self.velocity;
                     self.movement_dir = input;
                 }
                 MovementDir::Right => {
+                    self.position_matrix[self.head_position.x as usize]
+                        [self.head_position.y as usize] = false;
                     self.shift_tail();
                     self.head_position.x += self.velocity;
                     self.movement_dir = input;
@@ -66,12 +74,6 @@ impl Snake {
                     //if movement direction is none keep current movement
                 }
             }
-        }
-
-        if self.collide() {
-            //TODO: Clear tail on death
-            self.head_position = Point::new(20, 25);
-            self.movement_dir = MovementDir::Right;
         }
     }
 
@@ -109,15 +111,15 @@ impl Snake {
         true
     }
 
-    fn collide(&self) -> bool {
+    pub fn check_collision(&self) -> bool {
         if self.head_position.x >= VIEW_WIDTH
             || self.head_position.x < 0
             || self.head_position.y < 0
             || self.head_position.y >= VIEW_HEIGHT
+            || !self.position_matrix[self.head_position.x as usize][self.head_position.y as usize]
         {
             return true;
         }
-        //TODO: Check for collision with own tail
         false
     }
 
@@ -151,6 +153,7 @@ impl Snake {
             let mut _dir = MovementDir::None;
 
             for tail_piece in self.tail.iter_mut() {
+                self.position_matrix[next_pos.x as usize][next_pos.y as usize] = false;
                 _pos = Point::new(tail_piece.position.x, tail_piece.position.y);
                 _dir = tail_piece.movement_dir;
                 tail_piece.position = Point::new(next_pos.x, next_pos.y);
